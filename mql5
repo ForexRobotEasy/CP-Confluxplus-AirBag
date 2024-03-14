@@ -1,0 +1,88 @@
+
+// CP Confluxplus AirBag
+// Developer: Forex Robot Easy Team
+// Website: forexroboteasy.com
+
+// Import necessary libraries
+#include <Trade\Trade.mqh>
+#include <Trade\Order.mqh>
+
+// Initialize variables
+double maxLossPercentage = 5; // Maximum loss percentage to trigger the AirBag
+double accountBalance;
+double maxLossAmount;
+bool airBagActivated = false;
+
+// Create an instance of the trade class
+CTrade trade;
+
+// Function to calculate the maximum loss amount based on the account balance
+void CalculateMaxLossAmount()
+{
+    accountBalance = AccountInfoDouble(ACCOUNT_BALANCE);
+    maxLossAmount = accountBalance * maxLossPercentage / 100;
+}
+
+// Function to close all positions and shut down charts
+void CloseAndShutdown()
+{
+    // Close all positions
+    CArrayObj* orders = trade.GetOrders();
+    for (int i = 0; i < orders.Total(); i++)
+    {
+        COrder* order = (COrder*)orders.At(i);
+        trade.PositionClose(order);
+    }
+
+    // Shutdown charts
+    ChartClose(0);
+}
+
+// Function to check if the maximum loss amount has been reached
+bool CheckMaxLossReached()
+{
+    double currentLoss = accountBalance - AccountInfoDouble(ACCOUNT_EQUITY);
+    if (currentLoss >= maxLossAmount)
+        return true;
+    
+    return false;
+}
+
+// Entry point of the program
+int OnInit()
+{
+    // Calculate the maximum loss amount
+    CalculateMaxLossAmount();
+
+    return(INIT_SUCCEEDED);
+}
+
+// Main program loop
+void OnTick()
+{
+    // Check if maximum loss has been reached
+    if (CheckMaxLossReached())
+    {
+        // Close all positions and shut down charts
+        CloseAndShutdown();
+
+        // Set AirBag activated flag
+        airBagActivated = true;
+    }
+}
+
+// Function to display AirBag status
+void DisplayAirBagStatus()
+{
+    if (airBagActivated)
+        Print('CP Confluxplus AirBag activated!');
+    else
+        Print('CP Confluxplus AirBag not activated.');
+}
+
+// Program termination
+void OnDeinit(const int reason)
+{
+    // Display AirBag status
+    DisplayAirBagStatus();
+}
